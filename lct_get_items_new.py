@@ -14,63 +14,85 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:39.0) Gecko/20100101 Firefox/39.0',
-    'Referer': 'http://www.lecuntao.com/shop/index.php?act=category&op=index'    
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; rv:39.0) Gecko/20100101 Firefox/39.0',
+    'Referer':
+        'http://www.lecuntao.com/shop/index.php?act=category&op=index'
     }
 TIME_OUT = 5
-ERROR_NUM = 111
-#抓取页面    
-def crawl(url):
-    try:    
-        rq = requests.get(url, headers = HEADERS, timeout = TIME_OUT)
-    except:
-        print '---timeout---'
-        return ERROR_NUM
-    return rq.text
+ERROR_NUM = '111'
 
-#分析页面
+def crawl(url):
+    '''
+    抓取页面，如果超时，则返回ERROR_NUM；正常则返回html
+    '''
+    try:
+        request = requests.get(url, headers=HEADERS, timeout=TIME_OUT)
+    except Exception as e:
+        print e
+        print 'return ERROR_NUM'
+        return ERROR_NUM
+    return request.text
+
 def parse(html):
+    '''
+    页面分析，如果接收到的内容是ERROR_NUM，则说明超时了，则无需在分析；
+    如果正常，则分别匹配出商品的id，name，price，stat，并写到以日期命名的文件中
+    '''
     if html == ERROR_NUM:
-        print 'pass parse'        
-        return str(ERROR_NUM)
+        print 'pass parse'
+        return ERROR_NUM
     day = str(datetime.date.today())
     lct_items = open(day, 'a')
-    
-    soup = BeautifulSoup(html)
-    goods = soup.find_all('div', class_='goods-content')
+
+    parse_page = BeautifulSoup(html)
+    goods = parse_page.find_all('div', class_='goods-content')
     for good in goods:
         good_id = good['nctype_goods']
-        good_name = good.select('div[class="goods-name"]')[0].a.text.replace(',','_')
+        good_name = good.select('div[class="goods-name"]')[0].a.text.replace(',', '_')
+
         good_price = good.select('em[class="sale-price"]')[0].text
+        if re.findall(u'\u4e07', good_price):#处理‘1.3万’这种价格
+            good_price = str(float(good_price[:-1])*10000)
+        else:#取得价格里的人民币符号
+            good_price = good_price[1:]
+
         good_stat = good.select('a[class="status"]')[0].text
-        lct_items.write(good_id + ',' + good_name + ',' + good_price + ',' + good_stat + '\n')
-        
+        lct_items.write(good_id + ',' + good_name + ','
+                        + good_price + ',' + good_stat + '\n')
+
     lct_items.close()
 
-#取得所有分类的连接列表 
-start_url = 'http://www.lecuntao.com/shop/index.php?act=category&op=index'
-list_page = crawl(start_url)
-soup = BeautifulSoup(list_page)
-list_links = soup.find_all('h4')
+#取得所有分类的连接列表
+start_link = 'http://www.lecuntao.com/shop/index.php?act=category&op=index'
+start_page = crawl(start_link)
+soup_start_page = BeautifulSoup(start_page)
+link_lists = soup_start_page.find_all('h4')
 
-for list_link in list_links:
-    try:    
-        current_link = list_link.a['href']
-    except:
-        print 'error match'
+for link_list in link_lists:
+    try:
+        current_link = link_list.a['href']
+    except Exception as e:
+        print e
+        print 'error match, goto next cate'
         continue
     while 1:
         print current_link
         current_page = crawl(current_link)
         parse(current_page)
-        if len(re.findall(u'</span></a></li><li><span>\u4e0b\u4e00\u9875</span></li></ul>', current_page))>0:#last page
-            print 'get next cate'
+        if len(re.findall(
+                u'</span></a></li><li><span>\u4e0b\u4e00\u9875</span></li></ul>',
+                current_page)
+            ) > 0:#last page
+            print 'goto next cate'
             break
         else:#next page
             match_links = re.findall(
-                r'</li><li><a class="demo" href="http://www.lecuntao.com/shop/cate-.*?.html', current_page)
+                r'</li><li><a class="demo" href="http://www.lecuntao.com/shop/cate-.*?.html',
+                current_page)
             try:
                 current_link = match_links[0][31:]
-            except:
-                print 'can not get link in this page'
+            except Exception as e:
+                print e
+                print 'can not get link in this page, goto next cate'
                 break
