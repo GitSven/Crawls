@@ -63,36 +63,40 @@ def parse(html):
 
     lct_items.close()
 
-#取得所有分类的连接列表
-start_link = 'http://www.lecuntao.com/shop/index.php?act=category&op=index'
-start_page = crawl(start_link)
-soup_start_page = BeautifulSoup(start_page)
-link_lists = soup_start_page.find_all('h4')
-
-for link_list in link_lists:
-    try:
-        current_link = link_list.a['href']
-    except Exception as e:
-        print e
-        print 'error match, goto next cate'
-        continue
-    while 1:
-        print current_link
-        current_page = crawl(current_link)
-        parse(current_page)
-        if len(re.findall(
-                u'</span></a></li><li><span>\u4e0b\u4e00\u9875</span></li></ul>',
-                current_page)
-            ) > 0:#last page
-            print 'goto next cate'
-            break
-        else:#next page
-            match_links = re.findall(
-                r'</li><li><a class="demo" href="http://www.lecuntao.com/shop/cate-.*?.html',
-                current_page)
-            try:
-                current_link = match_links[0][31:]
-            except Exception as e:
-                print e
-                print 'can not get link in this page, goto next cate'
+def main():
+    #取得所有分类的连接列表
+    start_link = 'http://www.lecuntao.com/shop/index.php?act=category&op=index'
+    start_page = crawl(start_link)
+    soup_start_page = BeautifulSoup(start_page)
+    link_lists = soup_start_page.find_all('h4')
+    
+    for link_list in link_lists:
+        try:
+            current_link = link_list.a['href']
+        except Exception as e:
+            print e
+            print 'error match, goto next cate'
+            continue
+        while 1:
+            print current_link
+            current_page = crawl(current_link)
+            parse(current_page)
+            if len(re.findall(
+                    u'</span></a></li><li><span>\u4e0b\u4e00\u9875</span></li></ul>',
+                    current_page)
+                ) > 0:#last page
+                print 'goto next cate'
                 break
+            else:#next page
+                match_links = re.findall(
+                    r'</li><li><a class="demo" href="http://www.lecuntao.com/shop/cate-.*?.html',
+                    current_page)
+                try:
+                    current_link = match_links[0][31:]
+                except Exception as e:
+                    print e
+                    print 'can not get link in this page, goto next cate'
+                    break
+
+if __name__ == '__main__':
+    main()
