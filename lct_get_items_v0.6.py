@@ -36,10 +36,10 @@ def make_file(goods):
 
     items_file = open(name, 'a')
 
-    try:    
+    try:
         for goods_id in goods.keys():
-            items_file.write(goods_id + ',' + 
-                            goods[goods_id].encode('utf-8') + '\n', )
+            items_file.write(
+                goods_id + ',' + goods[goods_id].encode('utf-8') + '\n')
 #            items_file.write(goods_id + ',' + goods[goods_id][0] + ',' +
 #                goods[goods_id][1] + ',' + goods[goods_id][2] + '\n', )
     finally:
