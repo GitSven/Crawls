@@ -34,16 +34,16 @@ def make_file(goods):
     while os.path.exists(name):
         name = name[:-1] + str(int(name[-1])+1)
 
-    items_file = open(name, 'a')
-
-    try:
+    # items_file = open(name, 'a')
+    with open(name, 'a') as items_file:
+    # try:
         for goods_id in goods.keys():
             items_file.write(
                 goods_id + ',' + goods[goods_id].encode('utf-8') + '\n')
 #            items_file.write(goods_id + ',' + goods[goods_id][0] + ',' +
 #                goods[goods_id][1] + ',' + goods[goods_id][2] + '\n', )
-    finally:
-        items_file.close()
+    # finally:
+    #    items_file.close()
 
 
 def crawl(url):
