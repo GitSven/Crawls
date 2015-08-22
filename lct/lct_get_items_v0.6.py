@@ -5,7 +5,6 @@ Created on Mon Aug 10 09:19:20 2015
 @author: sven
 """
 
-
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -22,7 +21,7 @@ HEADERS = {
         'http://www.lecuntao.com/shop/index.php?province_id=140'
     }
 TIME_OUT = 5
-ERROR_NUM = '111'
+#ERROR_NUM = '111'
 INDEX = 'http://www.lecuntao.com/shop/index.php?act=category&op=index'
 
 
@@ -100,15 +99,17 @@ def get_cate_list():
     index_page = crawl(INDEX)
     links_div = BeautifulSoup(index_page).find_all('div', class_='class')
 
-    cate_links = []
+#    cate_links = []
     for div in links_div:
-        cate_links.append(div.a['href'])
+#        cate_links.append(div.a['href'])
+        cate_links = div.a['href']
+        yield cate_links
 
-    return cate_links
+#    return cate_links
 
 
 def main():
-#    start = time.time()
+    start = time.time()
     items = {}
     cates = get_cate_list()
     last_r = u'</span></a></li><li><span>\u4e0b\u4e00\u9875</span></li></ul>'
@@ -137,7 +138,8 @@ def main():
                     break
 
     make_file(items)
-#    print time.time() - ststart
+#    make_file(current_page_items)
+    print time.time() - start
 
 if __name__ == '__main__':
     main()
