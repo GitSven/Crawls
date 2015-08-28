@@ -14,6 +14,21 @@ import os
 #reload(sys)
 #sys.setdefaultencoding('utf-8')
 
+#add logging
+import logging
+
+logger = logging.getLogger('mylogger')
+logger.setLevel(logging.DEBUG)
+
+fh = logging.FileHandler('test.log')
+fh.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+
+logger.addHandler(fh)
+
+
 HEADERS = {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; rv:39.0) Gecko/20100101 Firefox/39.0',
@@ -29,6 +44,9 @@ def make_file(goods):
     '''
     检查文件是否存在，存在的话则重命名,然后写入信息
     '''
+    logger.info('making file start...')
+    start_mf = time.time()
+    
     name = time.strftime('%Y-%m-%d', time.localtime()) + '-1'
     while os.path.exists(name):
         name = name[:-1] + str(int(name[-1])+1)
@@ -39,6 +57,10 @@ def make_file(goods):
         for goods_id in goods.keys():
             items_file.write(
                 goods_id + ',' + goods[goods_id].encode('utf-8') + '\n')
+    
+    end_mf = time.time()
+    logger.info('making file end...')
+    logger.info('make file time ' + str(end_mf - start_mf))
 #            items_file.write(goods_id + ',' + goods[goods_id][0] + ',' +
 #                goods[goods_id][1] + ',' + goods[goods_id][2] + '\n', )
     # finally:
@@ -53,7 +75,7 @@ def crawl(url):
         request = requests.get(url, headers=HEADERS, timeout=TIME_OUT)
     except Exception, e:
         print e
-        print '===crawl url field==='
+        logger.info('=====crawl field=====',e)        
         return ''
 
     return request.text
@@ -65,7 +87,7 @@ def parse(html):
     如果正常，则分别匹配出商品的id，name，price，stat，并写到以日期命名的文件中
     '''
     if not html:
-        print '======pass parse====='
+        logger.info('======pass parse=====')
         return {}
 
     items = {}
@@ -96,6 +118,7 @@ def get_cate_list():
     '''
     取得所有分类的连接
     '''
+    logger.info('parse cate list start...')
     index_page = crawl(INDEX)
     links_div = BeautifulSoup(index_page).find_all('div', class_='class')
 
@@ -104,13 +127,16 @@ def get_cate_list():
 #        cate_links.append(div.a['href'])
         cate_links = div.a['href']
         yield cate_links
-
+    
+    logger.info('parse cate list end...')
 #    return cate_links
 
 
 def main():
-    start = time.time()
+    start_main = time.time()
+    logger.info('misson start...')
     items = {}
+    logger.info('parse start...')
     cates = get_cate_list()
     last_r = u'</span></a></li><li><span>\u4e0b\u4e00\u9875</span></li></ul>'
     next_r = r'</li><li><a class="demo" href="http://.*?/cate-.*?.html'
@@ -121,25 +147,30 @@ def main():
 
         while 1:
 
-            print current_link
+            logger.info(current_link)
             current_page = crawl(current_link)
             current_page_items = parse(current_page)
             items.update(current_page_items)
 
             if len(re.findall(last_r, current_page)) > 0:#last page
-                print 'goto next cate'
+                logger.info('goto next cate')
                 break
             else:#next page
                 match_links = re.findall(next_r, current_page)
                 if match_links:
                     current_link = match_links[0][31:]
                 else:
-                    print 'can not get link in this page, goto next cate'
+                    logger.info('can not get link in this page, goto next cate')
                     break
-
+    end_p = time.time()
+    logger.info('parse end...')
+    logger.info('parse used time'+str(end_p - start_main))
+    
     make_file(items)
-#    make_file(current_page_items)
-    print time.time() - start
+
+    end_main = time.time()
+    logger.info('misson end...')
+    logger.info('misson used time'+str(end_main - start_main))
 
 if __name__ == '__main__':
     main()
